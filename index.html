@@ -63,6 +63,13 @@ button:hover{border-color:var(--ac)}
 .tile.hasimg small{color:rgba(255,255,255,.88)}
 .tile.hasimg .ed{color:#fff;background:rgba(0,0,0,.4);opacity:.9}
 .tile.cat.hasimg.on{outline:3px solid var(--k);outline-offset:2px}
+#fitg{width:auto;margin:0}
+.tile.fitfull>a,.tile.fitfull>.cb{padding:0 0 10px;justify-content:flex-start;gap:4px}
+.tile.fitfull .ico{flex:1 1 0;min-height:0;width:100%;height:auto;border-radius:14px 14px 0 0}
+.tile.fitfull .ico.em{font-size:clamp(36px,11vw,88px)}
+.tile.fitfull .ico.mono{font-size:clamp(26px,8vw,58px)}
+.tile.fitfull .ico svg{width:55%;height:55%}
+.tile.fitfull b,.tile.fitfull small{padding:0 8px}
 .look{align-items:center;gap:10px;margin-bottom:8px}.look input[type=color]{width:46px;height:34px;padding:2px}
 .look input[type=file]{width:auto;flex:1 1 150px;margin:0;border:none;padding:0;background:none}
 .prev{width:48px;height:48px;border-radius:12px;border:1px solid var(--bd);display:grid;place-items:center;flex:none;overflow:hidden}
@@ -89,11 +96,12 @@ dialog h3{margin:0 0 10px;font-size:16px}
 dialog input,dialog textarea{width:100%;margin-bottom:8px}
 textarea{font:12px/1.4 ui-monospace,monospace;height:150px;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px}
 .cl{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd)}
-.end{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.end{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:10px}
 </style></head><body><main>
 <h1>🔖 Mis enlaces</h1>
 <div class="row"><input id="q" type="search" placeholder="Buscar en todas las categorías…" style="flex:1 1 220px">
-<button id="bio">Exportar / importar</button></div>
+<button id="bio">Exportar / importar</button>
+<select id="fitg" title="Tamaño de los iconos"><option value="auto">Iconos: automático</option><option value="small">Iconos: pequeños</option><option value="full">Iconos: grandes</option></select></div>
 <div id="view"></div>
 <h2 class="sec">Categorías</h2>
 <div class="grid" id="tabs"></div>
@@ -121,6 +129,8 @@ function hsh(t){let h=0;for(const ch of t)h=(h*31+ch.charCodeAt(0))>>>0;return h
 const hx=v=>/^#[0-9a-f]{6}$/i.test(v)?v:undefined;
 const im=v=>typeof v==="string"&&v.startsWith("data:image/")?v:undefined;
 function ck(c){return c.bg||cc(c)}
+const fv=v=>v==="small"||v==="full"?v:undefined;
+function fitOf(o){return o.fit||S.fit||"auto"}
 function tx(h){const n=parseInt(h.slice(1),16),r=n>>16,g=(n>>8)&255,b=n&255;return(r*299+g*587+b*114)/1000>150?"#1f2328":"#ffffff"}
 function imgBox(src){const d=el("div",{className:"ico img"});d.style.background="center/contain no-repeat url(\""+src+"\")";return d}
 function catico(c){if(c.img)return imgBox(c.img);const d=el("div",{className:"ico"});if(EMO){d.classList.add("em");d.textContent=ci(c)}else d.innerHTML=sv(SVGI[ci(c)]||SVGI["📁"],40);return d}
@@ -178,7 +188,7 @@ function usedBar(v){const t=topUsed();if(!t.length)return;
   t.forEach(({l})=>{const a=el("a",{className:"chip",href:l.url,target:"_blank",rel:"noopener noreferrer",title:l.url},ico(l),el("span",{textContent:l.title}));a.addEventListener("click",()=>hit(l));a.addEventListener("auxclick",()=>hit(l));row.append(a)});
   v.append(el("div",{className:"sec2",innerHTML:sv(STAR,15)+" Más usados"}),row)}
 function render(){
-  ensureCur();
+  ensureCur();$("#fitg").value=S.fit||"auto";
   const q=$("#q").value.trim().toLowerCase();
   const v=$("#view");v.innerHTML="";
   if(q){
@@ -208,10 +218,10 @@ function render(){
   renderCats(q);
 }
 function catTile(c,on){
-  const n=kids(c).length,t0=tot(c);
-  const b=el("button",{className:"cb",onclick:()=>{cur=c.id;SEL=null;$("#q").value="";render();window.scrollTo({top:0,behavior:"smooth"})}},c.img?"":catico(c),el("b",{textContent:c.name}),el("small",{textContent:t0+(t0===1?" enlace":" enlaces")+(n?" · "+n+" sub.":"")}));
+  const f=fitOf(c),n=kids(c).length,t0=tot(c);
+  const b=el("button",{className:"cb",onclick:()=>{cur=c.id;SEL=null;$("#q").value="";render();window.scrollTo({top:0,behavior:"smooth"})}},c.img&&f!=="small"?"":catico(c),el("b",{textContent:c.name}),el("small",{textContent:t0+(t0===1?" enlace":" enlaces")+(n?" · "+n+" sub.":"")}));
   const t=el("div",{className:"tile cat"+(on?" on":"")},b,el("button",{className:"ed",title:"Editar categoría",innerHTML:sv(PEN,16),onclick:()=>editCat(c)}));
-  t.style.setProperty("--k",ck(c));if(c.img)fillImg(t,c);return t}
+  t.style.setProperty("--k",ck(c));if(c.img&&f!=="small")fillImg(t,c);else if(!c.img&&f==="full")t.classList.add("fitfull");return t}
 function renderCats(q){
   const tabs=$("#tabs");tabs.innerHTML="";
   const cu=catOf(cur)||{};
@@ -234,7 +244,7 @@ function moveSel(c){
       d.append(el("div",{className:"cl"},el("span",{textContent:cit(k)+path(k)}),el("span",{className:"acts"},el("button",{textContent:"Copiar",onclick:()=>go(false)}),el("button",{textContent:"Mover",onclick:()=>go(true)}))))});
     d.append(el("div",{className:"end"},el("button",{textContent:"Cerrar",onclick:close})))})}
 function lookFields(d,o,def){
-  const st={bg:o.bg,img:o.img};
+  const st={bg:o.bg,img:o.img,fit:o.fit||""};
   const prev=el("div",{className:"prev"});
   const upd=()=>{prev.innerHTML="";prev.style.background=st.bg||def;if(st.img)prev.append(el("img",{src:st.img}))};
   const col=el("input",{type:"color",value:st.bg||def,title:"Color de fondo"});
@@ -242,7 +252,9 @@ function lookFields(d,o,def){
   const file=el("input",{type:"file",accept:"image/*"});
   file.addEventListener("change",async()=>{const f=file.files[0];if(!f)return;try{st.img=await shrink(f);upd()}catch(e){toast("No se pudo leer esa imagen.")}});
   d.append(el("div",{className:"tag",textContent:"Color de fondo"}),el("div",{className:"row look"},col,el("button",{type:"button",textContent:"Automático",onclick:()=>{st.bg=undefined;col.value=def;upd()}}),prev));
-  d.append(el("div",{className:"tag",textContent:"Imagen propia (llena todo el cuadro)"}),el("div",{className:"row look"},file,el("button",{type:"button",textContent:"Quitar",onclick:()=>{st.img=undefined;file.value="";upd()}})));
+  d.append(el("div",{className:"tag",textContent:"Imagen propia"}),el("div",{className:"row look"},file,el("button",{type:"button",textContent:"Quitar",onclick:()=>{st.img=undefined;file.value="";upd()}})));
+  const fs=el("select");[["","Seguir el ajuste general"],["small","Pequeño (tamaño de un emoji)"],["full","Grande: llena todo el botón"]].forEach(([v,t])=>fs.append(el("option",{value:v,textContent:t})));fs.value=st.fit;fs.addEventListener("change",()=>{st.fit=fs.value});
+  d.append(el("div",{className:"tag",textContent:"Tamaño del icono o imagen"}),fs);
   upd();return st}
 function editCat(c,pid){
   const isNew=!c,o=c||{id:uid(),name:"",links:[],p:pid};
@@ -255,7 +267,7 @@ function editCat(c,pid){
     d.append(el("div",{className:"tag",textContent:"Ubicación"}),sel);
     const look=lookFields(d,o,cc(o));
     const go=()=>{const nm=n.value.trim();if(!nm){n.style.borderColor="var(--dg)";n.focus();return}
-      o.name=nm;o.i=i.value.trim()||undefined;o.bg=look.bg;o.img=look.img;o.p=sel.value||undefined;
+      o.name=nm;o.i=i.value.trim()||undefined;o.bg=look.bg;o.img=look.img;o.fit=look.fit||undefined;o.p=sel.value||undefined;
       if(isNew){S.cats.push(o);cur=o.id}save();close();render()};
     const btns=[];
     if(!isNew)btns.push(el("button",{className:"dg",style:"margin-right:auto",textContent:"Borrar",onclick:()=>{
@@ -267,9 +279,10 @@ function editCat(c,pid){
 function grid(v,items,sortCat){
   if(!items.length){v.append(el("div",{className:"empty",textContent:"Aún no hay enlaces aquí."}));return}
   const srch=$("#q").value.trim(),g=el("div",{className:"grid"});
-  items.forEach(([c,l])=>{
-    const a=el("a",{href:l.url,target:"_blank",rel:"noopener noreferrer",title:l.url},l.img?"":ico(l),el("b",{textContent:l.title}),el("small",{textContent:srch?cit(c)+path(c):host(l.url)}));a.addEventListener("click",()=>hit(l));a.addEventListener("auxclick",()=>hit(l));
-    const tile=el("div",{className:"tile"},a,el("button",{className:"ed",title:"Editar, copiar o mover",innerHTML:sv(PEN,16),onclick:()=>editLink(c,l)}));tile.dataset.id=l.id;if(l.img)fillImg(tile,l);else if(l.bg){tile.style.background=l.bg;tile.style.borderColor=l.bg;tile.style.color=tx(l.bg);tile.classList.add("tinted")}if(SEL&&sortCat){tile.classList.add("selectable");if(SEL.has(l.id))tile.classList.add("sel");tile.addEventListener("click",e=>{e.preventDefault();if(SEL.has(l.id))SEL.delete(l.id);else SEL.add(l.id);tile.classList.toggle("sel");updSel()})}
+  items.forEach(([c,l])=>{const f=fitOf(l);
+    const a=el("a",{href:l.url,target:"_blank",rel:"noopener noreferrer",title:l.url},l.img&&f!=="small"?"":ico(l),el("b",{textContent:l.title}),el("small",{textContent:srch?cit(c)+path(c):host(l.url)}));a.addEventListener("click",()=>hit(l));a.addEventListener("auxclick",()=>hit(l));
+    const tile=el("div",{className:"tile"},a,el("button",{className:"ed",title:"Editar, copiar o mover",innerHTML:sv(PEN,16),onclick:()=>editLink(c,l)}));tile.dataset.id=l.id;if(l.img&&f!=="small")fillImg(tile,l);else if(l.bg){tile.style.background=l.bg;tile.style.borderColor=l.bg;tile.style.color=tx(l.bg);tile.classList.add("tinted")}if(!l.img&&f==="full")tile.classList.add("fitfull");
+    if(SEL&&sortCat){tile.classList.add("selectable");if(SEL.has(l.id))tile.classList.add("sel");tile.addEventListener("click",e=>{e.preventDefault();if(SEL.has(l.id))SEL.delete(l.id);else SEL.add(l.id);tile.classList.toggle("sel");updSel()})}
     g.append(tile)});
   if(sortCat&&!SEL){v.append(el("div",{className:"tag",textContent:"↕ Arrastra los cuadros para reordenarlos (en pantalla táctil, mantén pulsado un momento)"}));enableSort(g,sortCat)}
   
@@ -321,31 +334,53 @@ function editLink(c,l){
           el("button",{textContent:has?"Ya está":"Copiar",disabled:has,onclick:()=>{k.links.unshift({...l,id:uid(),n:0});save();close();render()}}),
           el("button",{textContent:"Mover",onclick:()=>{c.links=c.links.filter(z=>z.id!==l.id);if(!has)k.links.unshift({...l,id:uid()});save();close();render()}}))))})}
     const go=()=>{const n=norm(u.value);if(!n){u.style.borderColor="var(--dg)";u.focus();return}
-      l.title=t.value.trim()||host(n);l.url=n;l.bg=look.bg;l.img=look.img;const e=i.value.trim();if(e){l.i=e}else{const g=guess(n)||[];l.i=g[0];l.c=g[1]}save();close();render()};
+      l.title=t.value.trim()||host(n);l.url=n;l.bg=look.bg;l.img=look.img;l.fit=look.fit||undefined;const e=i.value.trim();if(e){l.i=e}else{const g=guess(n)||[];l.i=g[0];l.c=g[1]}save();close();render()};
     d.append(el("div",{className:"end"},el("button",{className:"dg",style:"margin-right:auto",textContent:"Borrar",onclick:()=>{c.links=c.links.filter(z=>z.id!==l.id);save();close();render()}}),el("button",{textContent:"Cancelar",onclick:close}),el("button",{className:"pri",textContent:"Guardar",onclick:go})))})}
-function importData(txt){
-  try{const n=JSON.parse(txt);if(!n||!Array.isArray(n.cats)||!n.cats.length)return false;
+function parseData(txt){
+  try{const n=JSON.parse(txt);if(!n||!Array.isArray(n.cats)||!n.cats.length)return null;
     const ids=new Set(n.cats.map(c=>c&&c.id).filter(Boolean));
-    const cats=n.cats.map(c=>({id:c.id||uid(),name:String(c.name||"Sin nombre"),i:c.i,bg:hx(c.bg),img:im(c.img),p:(c.p&&c.p!==c.id&&ids.has(c.p))?c.p:undefined,
-      links:(c.links||[]).filter(l=>norm(l.url)).map(l=>({id:l.id||uid(),title:String(l.title||host(l.url)),url:norm(l.url),i:l.i,c:l.c,bg:hx(l.bg),img:im(l.img),n:l.n>0?Math.floor(l.n):undefined}))}));
+    const cats=n.cats.map(c=>({id:c.id||uid(),name:String(c.name||"Sin nombre"),i:c.i,bg:hx(c.bg),img:im(c.img),fit:fv(c.fit),p:(c.p&&c.p!==c.id&&ids.has(c.p))?c.p:undefined,
+      links:(c.links||[]).filter(l=>norm(l.url)).map(l=>({id:l.id||uid(),title:String(l.title||host(l.url)),url:norm(l.url),i:l.i,c:l.c,bg:hx(l.bg),img:im(l.img),fit:fv(l.fit),n:l.n>0?Math.floor(l.n):undefined}))}));
     cats.forEach(c=>{if(c.p){const p=cats.find(x=>x.id===c.p);if(!p||p.p)c.p=undefined}});
-    if(!cats.some(c=>!c.p))return false;
-    S={m3:1,cats};cur=cats.find(c=>!c.p).id;SEL=null;save();render();return true}catch(e){return false}}
+    if(!cats.some(c=>!c.p))return null;
+    return{cats,fit:fv(n.fit)}}catch(e){return null}}
+function importData(txt){
+  const n=parseData(txt);if(!n)return false;
+  S={m3:1,fit:n.fit,cats:n.cats};cur=n.cats.find(c=>!c.p).id;SEL=null;save();render();return true}
+function mergeData(txt){
+  const n=parseData(txt);if(!n)return null;
+  const byId=new Map(n.cats.map(c=>[c.id,c])),map=new Map();let nc=0,nl=0;
+  const find=(name,pid)=>S.cats.find(x=>x.name.toLowerCase()===name.toLowerCase()&&(x.p||"")===(pid||""));
+  const ensure=ic=>{if(map.has(ic.id))return map.get(ic.id);
+    const pid=ic.p?ensure(byId.get(ic.p)).id:undefined;
+    let c=find(ic.name,pid);
+    if(!c){c={id:uid(),name:ic.name,i:ic.i,bg:ic.bg,img:ic.img,fit:ic.fit,p:pid,links:[]};S.cats.push(c);nc++}
+    map.set(ic.id,c);return c};
+  n.cats.forEach(ic=>{const c=ensure(ic);ic.links.forEach(l=>{if(!c.links.some(z=>z.url===l.url)){c.links.push({...l,id:uid()});nl++}})});
+  save();render();return{nc,nl}}
+function loadCopy(txt,replace){
+  if(replace){if(importData(txt)){close();toast("Copia cargada: se ha sustituido todo.");return true}}
+  else{const r=mergeData(txt);if(r){close();toast(r.nl||r.nc?"Añadidos "+r.nl+(r.nl===1?" enlace":" enlaces")+" y "+r.nc+(r.nc===1?" categoría nueva.":" categorías nuevas."):"No había nada nuevo que añadir.");return true}}
+  toast("Ese texto o archivo no es una copia válida.");return false}
 function download(){try{const b=new Blob([JSON.stringify(S)],{type:"application/json"}),a=el("a",{href:URL.createObjectURL(b),download:"mis-enlaces-"+new Date().toISOString().slice(0,10)+".json"});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),3000);toast("Descarga iniciada. Si no aparece el archivo, usa el texto.")}catch(e){toast("No se pudo descargar; usa el texto.")}}
 $("#bio").onclick=()=>openDlg(d=>{
   const ta=el("textarea",{value:JSON.stringify(S),placeholder:"Pega aquí el texto de una copia"});
+  const mode=el("select");[["add","Al cargar: añadir a lo que hay"],["rep","Al cargar: sustituir todo"]].forEach(([v,t])=>mode.append(el("option",{value:v,textContent:t})));
   const file=el("input",{type:"file",accept:".json,application/json"});
-  file.addEventListener("change",()=>{const f=file.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{if(importData(String(r.result))){close();toast("Copia cargada.")}else toast("Ese archivo no es una copia válida.")};r.readAsText(f)});
+  file.addEventListener("change",()=>{const f=file.files[0];if(!f)return;const r=new FileReader();r.onload=()=>loadCopy(String(r.result),mode.value==="rep");r.readAsText(f)});
   d.append(el("h3",{textContent:"Copia de seguridad"}),
-    el("p",{className:"tag",textContent:"Descarga un archivo y cárgalo en otro navegador o dispositivo. Al cargar, se sustituye lo que haya."}),
-    el("div",{className:"row look"},el("button",{className:"pri",textContent:"Descargar archivo",onclick:download}),file),
-    el("p",{className:"tag",textContent:"O usa el texto: cópialo, o pega uno y pulsa Importar."}),ta,
+    el("p",{className:"tag",textContent:"Descarga un archivo y cárgalo en otro navegador o dispositivo. «Añadir» suma lo que falte sin tocar lo que ya tienes; «sustituir» deja solo la copia."}),
+    el("div",{className:"row look"},el("button",{className:"pri",textContent:"Descargar archivo",onclick:download})),
+    el("div",{className:"row look"},mode,file),
+    el("p",{className:"tag",textContent:"O usa el texto: cópialo, o pega uno de otro navegador y elige cómo cargarlo."}),ta,
     el("div",{className:"end"},
       el("button",{className:"dg",style:"margin-right:auto",textContent:"Contadores a cero",onclick:()=>{S.cats.forEach(c=>c.links.forEach(l=>{delete l.n}));save();close();render();toast("Contadores a cero.")}}),
       el("button",{textContent:"Copiar texto",onclick:()=>{ta.select();try{navigator.clipboard.writeText(ta.value)}catch(e){try{document.execCommand("copy")}catch(_){}}}}),
-      el("button",{className:"pri",textContent:"Importar",onclick:()=>{if(importData(ta.value))close();else ta.style.borderColor="var(--dg)"}}),
+      el("button",{className:"pri",textContent:"Importar y añadir",onclick:()=>{if(!loadCopy(ta.value,false))ta.style.borderColor="var(--dg)"}}),
+      el("button",{textContent:"Importar y sustituir",onclick:()=>{if(!loadCopy(ta.value,true))ta.style.borderColor="var(--dg)"}}),
       el("button",{textContent:"Cerrar",onclick:close})))});
 $("#q").addEventListener("input",render);
+$("#fitg").onchange=e=>{S.fit=e.target.value==="auto"?undefined:e.target.value;save();render()};
 document.addEventListener("visibilitychange",()=>{if(document.hidden||$("#dlg").open||SORT)return;if([...document.querySelectorAll("#view input")].some(i=>i.value))return;render()});
 render();
 </script></body></html>
